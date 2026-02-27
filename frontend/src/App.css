@@ -1,0 +1,122 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: var(--bg-main);
+}
+
+.auth-container {
+  width: 100%;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  width: 280px;
+  background: white;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.5rem;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 3rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.nav-link:hover {
+  background: #f5f3ff;
+  color: var(--primary);
+}
+
+.nav-link.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+/* Dashboard Cards */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--secondary);
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.activity-item {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.activity-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-top: 0.4rem;
+  flex-shrink: 0;
+  border: 4px solid white;
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.activity-content p {
+  margin: 0;
+}
+
+.activity-msg {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.activity-meta {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}

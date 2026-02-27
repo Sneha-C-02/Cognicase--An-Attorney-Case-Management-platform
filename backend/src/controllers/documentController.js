@@ -22,7 +22,7 @@ export const updateDocument = async (req, res) => {
         const document = await Document.findOneAndUpdate(
             { _id: req.params.id, createdBy: req.user._id },
             req.body,
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!document) return res.status(404).json({ message: 'Document not found' });
         res.json(document);

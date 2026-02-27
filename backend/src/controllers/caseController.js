@@ -79,7 +79,7 @@ export const updateCase = async (req, res) => {
 
         console.log("Updating Case:", req.params.id, "with data:", updateData);
 
-        const updatedCase = await Case.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const updatedCase = await Case.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
 
         if (oldCase.status !== updatedCase.status) {
             try {

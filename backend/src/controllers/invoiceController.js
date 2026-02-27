@@ -48,7 +48,7 @@ export const updateInvoiceStatus = async (req, res) => {
         const invoice = await Invoice.findOneAndUpdate(
             { _id: req.params.id, createdBy: req.user._id },
             { status: req.body.status },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
         res.json(invoice);

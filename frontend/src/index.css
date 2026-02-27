@@ -30,10 +30,22 @@
   --shadow-violet: 0 10px 15px -3px rgba(124, 58, 237, 0.1);
 }
 
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* Prevent body-level scrolling */
 }
 
 body {
@@ -90,7 +102,8 @@ body {
    ===================== */
 .modal-overlay {
   position: fixed;
-  inset: 0;      /* covers 0,0 to 100vw,100vh always */
+  inset: 0;
+  /* covers 0,0 to 100vw,100vh always */
   z-index: 1000;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(4px);
@@ -98,30 +111,46 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1rem;
+  overflow-y: auto;
+  /* Allow overlay itself to scroll if needed */
   animation: fadeOverlay 0.2s ease;
 }
 
 @keyframes fadeOverlay {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-box {
   background: white;
   border-radius: var(--radius-xl);
-  box-shadow: 0 24px 48px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.3);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.3);
   width: 100%;
   max-width: 520px;
-  max-height: 90vh;
+  max-height: min(700px, calc(100vh - 2rem));
   overflow-y: auto;
   padding: 2rem 2.25rem;
+  margin: auto;
+  /* Keep centered */
   animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUpModal {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-header {
@@ -500,10 +529,16 @@ tr:hover {
 
 .fade-in {
   animation: fadeScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .fade-in-up {
   animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .hero-gradient-overlay {

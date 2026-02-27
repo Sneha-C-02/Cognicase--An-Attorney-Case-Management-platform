@@ -16,7 +16,7 @@ export const getAllCases = async (req, res) => {
         // Strict scoping
         query.createdBy = req.user._id;
 
-        const cases = await Case.find(query).populate('clientId').sort({ createdAt: -1 });
+        const cases = await Case.find(query).populate('clientId').populate('createdBy', 'name').sort({ createdAt: -1 });
         res.json(cases);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -25,7 +25,7 @@ export const getAllCases = async (req, res) => {
 
 export const getCaseById = async (req, res) => {
     try {
-        const caseData = await Case.findOne({ _id: req.params.id, createdBy: req.user._id }).populate('clientId');
+        const caseData = await Case.findOne({ _id: req.params.id, createdBy: req.user._id }).populate('clientId').populate('createdBy', 'name');
         if (!caseData) return res.status(404).json({ message: 'Case not found' });
         res.json(caseData);
     } catch (error) {
@@ -48,6 +48,8 @@ export const createCase = async (req, res) => {
             description,
             court,
             deadline,
+            startDate,
+            billableHours: parseFloat(req.body.billableHours) || 0,
             createdBy: req.user._id,
         };
 
@@ -70,7 +72,14 @@ export const updateCase = async (req, res) => {
         const oldCase = await Case.findOne({ _id: req.params.id, createdBy: req.user._id });
         if (!oldCase) return res.status(404).json({ message: 'Case not found' });
 
-        const updatedCase = await Case.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updateData = { ...req.body };
+        if (updateData.billableHours !== undefined) {
+            updateData.billableHours = parseFloat(updateData.billableHours) || 0;
+        }
+
+        console.log("Updating Case:", req.params.id, "with data:", updateData);
+
+        const updatedCase = await Case.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
         if (oldCase.status !== updatedCase.status) {
             try {

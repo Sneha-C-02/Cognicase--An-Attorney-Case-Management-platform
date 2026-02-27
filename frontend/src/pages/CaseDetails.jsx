@@ -5,7 +5,7 @@ import {
     ArrowLeft, Calendar, User, Scale, Tag, Plus, FileText,
     X, Loader2, Receipt, AlertCircle
 } from 'lucide-react';
-import { getCaseById } from '../api/cases';
+import { getCaseById, updateCase } from '../api/cases';
 import { getTasks } from '../api/tasks';
 import { getDocuments, uploadDocument } from '../api/documents';
 import { createInvoice, getInvoices } from '../api/invoices';
@@ -28,11 +28,13 @@ const CaseDetails = () => {
     const [showDocModal, setShowDocModal] = useState(false);
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [showNoteModal, setShowNoteModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     // Form state
     const [docForm, setDocForm] = useState({ name: '', category: 'Legal Filing', description: '' });
     const [invoiceForm, setInvoiceForm] = useState({ clientName: '', amount: '', hours: '', hourlyRate: '', description: '', dueDate: '' });
     const [noteForm, setNoteForm] = useState({ content: '' });
+    const [editForm, setEditForm] = useState(null);
 
     const [submitting, setSubmitting] = useState(false);
 
@@ -51,12 +53,12 @@ const CaseDetails = () => {
 
         // Fetch remaining data independently so one failure doesn't break the page
         try {
-            const tData = await getTasks(id);
+            const tData = await getTasks({ caseId: id });
             setTasks(tData || []);
         } catch { setTasks([]); }
 
         try {
-            const dData = await getDocuments(id);
+            const dData = await getDocuments({ caseId: id });
             setDocuments(dData || []);
         } catch { setDocuments([]); }
 
@@ -142,6 +144,32 @@ const CaseDetails = () => {
         finally { setSubmitting(false); }
     };
 
+    const handleEditCase = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            await updateCase(id, editForm);
+            await fetchAllCaseData();
+            setShowEditModal(false);
+        } catch (err) { alert('Update failed: ' + err.message); }
+        finally { setSubmitting(false); }
+    };
+
+    const openEditModal = () => {
+        setEditForm({
+            title: caseData.title,
+            description: caseData.description,
+            court: caseData.court,
+            caseType: caseData.caseType,
+            status: caseData.status,
+            priority: caseData.priority,
+            billableHours: caseData.billableHours,
+            deadline: caseData.deadline ? caseData.deadline.split('T')[0] : '',
+            startDate: caseData.startDate ? caseData.startDate.split('T')[0] : ''
+        });
+        setShowEditModal(true);
+    };
+
     // ------------------- Render -------------------
 
     if (loading) return (
@@ -170,13 +198,18 @@ const CaseDetails = () => {
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' }}>{caseData.title}</h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', marginTop: '0.125rem' }}>Case ID: {id}</p>
                 </div>
-                <span style={{
-                    padding: '0.375rem 1rem', borderRadius: '9999px', fontSize: '0.8125rem', fontWeight: 700,
-                    background: caseData.status === 'Open' ? '#dcfce7' : caseData.status === 'InProgress' ? '#fef9c3' : '#f1f5f9',
-                    color: caseData.status === 'Open' ? '#166534' : caseData.status === 'InProgress' ? '#854d0e' : '#475569',
-                }}>
-                    {caseData.status}
-                </span>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button className="btn btn-secondary" onClick={openEditModal} style={{ fontSize: '0.8125rem' }}>
+                        Edit Case
+                    </button>
+                    <span style={{
+                        padding: '0.375rem 1rem', borderRadius: '9999px', fontSize: '0.8125rem', fontWeight: 700,
+                        background: caseData.status === 'Open' ? '#dcfce7' : caseData.status === 'InProgress' ? '#fef9c3' : '#f1f5f9',
+                        color: caseData.status === 'Open' ? '#166534' : caseData.status === 'InProgress' ? '#854d0e' : '#475569',
+                    }}>
+                        {caseData.status}
+                    </span>
+                </div>
             </div>
 
             {/* Overview + Metrics */}
@@ -226,7 +259,7 @@ const CaseDetails = () => {
                         <Receipt size={16} /> Create Invoice
                     </button>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.75rem' }}>
-                        Managed by {caseData.createdBy || 'Unknown'}
+                        Managed by {caseData.createdBy?.name || caseData.createdBy || 'Unknown'}
                     </p>
                 </div>
             </div>
@@ -548,6 +581,80 @@ const CaseDetails = () => {
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowNoteModal(false)}>Cancel</button>
                                 <button type="submit" className="btn btn-primary" disabled={submitting}>
                                     {submitting ? <><Loader2 size={15} className="animate-spin" /> Saving…</> : <><Plus size={15} /> Add Note</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* === EDIT CASE MODAL === */}
+            {showEditModal && editForm && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowEditModal(false)}>
+                    <div className="modal-box">
+                        <div className="modal-header">
+                            <h2>Edit Case Details</h2>
+                            <button className="modal-close-btn" onClick={() => setShowEditModal(false)}><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleEditCase}>
+                            <div className="form-group">
+                                <label>Case Title *</label>
+                                <input className="form-input" type="text" value={editForm.title}
+                                    onChange={e => setEditForm({ ...editForm, title: e.target.value })} required />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Start Date</label>
+                                    <input className="form-input" type="date" value={editForm.startDate}
+                                        onChange={e => setEditForm({ ...editForm, startDate: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Deadline</label>
+                                    <input className="form-input" type="date" value={editForm.deadline}
+                                        onChange={e => setEditForm({ ...editForm, deadline: e.target.value })} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Court</label>
+                                    <input className="form-input" type="text" value={editForm.court || ''}
+                                        onChange={e => setEditForm({ ...editForm, court: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Billable Hours</label>
+                                    <input className="form-input" type="number" min="0" step="0.1" value={editForm.billableHours || 0}
+                                        onChange={e => setEditForm({ ...editForm, billableHours: e.target.value })} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Status</label>
+                                    <select className="form-input" value={editForm.status}
+                                        onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                                        <option value="Open">Open</option>
+                                        <option value="InProgress">In Progress</option>
+                                        <option value="Closed">Closed</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Priority</label>
+                                    <select className="form-input" value={editForm.priority}
+                                        onChange={e => setEditForm({ ...editForm, priority: e.target.value })}>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea className="form-input" rows={3} value={editForm.description || ''}
+                                    onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                                    style={{ resize: 'vertical' }} />
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                                    {submitting ? <><Loader2 size={15} className="animate-spin" /> Saving…</> : <><Plus size={15} /> Save Changes</>}
                                 </button>
                             </div>
                         </form>

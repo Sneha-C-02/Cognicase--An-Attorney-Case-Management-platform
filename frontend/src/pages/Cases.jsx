@@ -25,7 +25,11 @@ const Cases = () => {
         type: 'Civil',
         status: 'Open',
         priority: 'Medium',
-        description: ''
+        description: '',
+        court: '',
+        startDate: '',
+        deadline: '',
+        billableHours: 0
     });
 
     const [editingCase, setEditingCase] = useState(null);
@@ -79,7 +83,11 @@ const Cases = () => {
                 type: 'Civil',
                 status: 'Open',
                 priority: 'Medium',
-                description: ''
+                description: '',
+                court: '',
+                startDate: '',
+                deadline: '',
+                billableHours: 0
             });
         } catch (err) {
             alert('Failed to create case: ' + err.message);
@@ -291,6 +299,31 @@ const Cases = () => {
                                 </select>
                             </div>
 
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Start Date</label>
+                                    <input className="form-input" type="date" value={formData.startDate}
+                                        onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Deadline</label>
+                                    <input className="form-input" type="date" value={formData.deadline}
+                                        onChange={e => setFormData({ ...formData, deadline: e.target.value })} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Court</label>
+                                    <input className="form-input" type="text" placeholder="e.g. Supreme Court" value={formData.court}
+                                        onChange={e => setFormData({ ...formData, court: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Billable Hours</label>
+                                    <input className="form-input" type="number" min="0" step="0.1" value={formData.billableHours}
+                                        onChange={e => setFormData({ ...formData, billableHours: e.target.value })} />
+                                </div>
+                            </div>
+
                             <div className="form-group">
                                 <label>Description</label>
                                 <textarea className="form-input" rows={3} placeholder="Brief description of the case..." value={formData.description}
@@ -375,6 +408,30 @@ const Cases = () => {
                                     <option value="Medium">Medium</option>
                                     <option value="High">High</option>
                                 </select>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Start Date</label>
+                                    <input className="form-input" type="date" value={editingCase.startDate ? editingCase.startDate.split('T')[0] : ''}
+                                        onChange={e => setEditingCase({ ...editingCase, startDate: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Deadline</label>
+                                    <input className="form-input" type="date" value={editingCase.deadline ? editingCase.deadline.split('T')[0] : ''}
+                                        onChange={e => setEditingCase({ ...editingCase, deadline: e.target.value })} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Court</label>
+                                    <input className="form-input" type="text" value={editingCase.court || ''}
+                                        onChange={e => setEditingCase({ ...editingCase, court: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Billable Hours</label>
+                                    <input className="form-input" type="number" min="0" step="0.1" value={editingCase.billableHours || 0}
+                                        onChange={e => setEditingCase({ ...editingCase, billableHours: e.target.value })} />
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Description</label>

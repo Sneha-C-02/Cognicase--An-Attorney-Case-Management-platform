@@ -27,6 +27,7 @@ out/
 logs/
 _logs/
 backend.log
+uploads/
 
 # Testing
 coverage/

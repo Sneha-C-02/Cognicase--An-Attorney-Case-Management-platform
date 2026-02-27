@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
-export const getCases = async () => {
-    const response = await apiClient.get('/cases');
+export const getCases = async (params) => {
+    const response = await apiClient.get('/cases', { params });
     return response.data;
 };
 

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Search, Bell } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const Header = ({ title }) => {
+const Header = ({ title, searchValue, onSearch }) => {
     const { user } = useAuth();
     return (
         <header style={{
@@ -18,6 +18,8 @@ const Header = ({ title }) => {
                     <input
                         type="text"
                         placeholder="Search cases..."
+                        value={searchValue || ''}
+                        onChange={(e) => onSearch && onSearch(e.target.value)}
                         style={{
                             padding: '0.625rem 1rem 0.625rem 2.5rem',
                             borderRadius: 'var(--radius-md)',
@@ -27,9 +29,6 @@ const Header = ({ title }) => {
                         }}
                     />
                 </div>
-                <button className="btn" style={{ background: 'none', padding: '0.5rem' }}>
-                    <Bell size={20} />
-                </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
                         {user?.name?.[0].toUpperCase() || 'U'}

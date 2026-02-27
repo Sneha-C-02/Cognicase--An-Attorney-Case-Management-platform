@@ -2,7 +2,18 @@ import Client from '../models/Client.js';
 
 export const getAllClients = async (req, res) => {
     try {
-        const clients = await Client.find({ createdBy: req.user._id });
+        const { search } = req.query;
+        let query = { createdBy: req.user._id };
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { company: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const clients = await Client.find(query).sort({ createdAt: -1 });
         res.json(clients);
     } catch (error) {
         res.status(500).json({ message: error.message });

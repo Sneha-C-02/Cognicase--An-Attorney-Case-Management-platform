@@ -5,7 +5,7 @@ import {
     Clock, BarChart3, ChevronRight, Scale,
     Briefcase, Globe, Users, Star
 } from 'lucide-react';
-import heroNodes from '../assets/hero-nodes.png';
+import landingGraphic from '../assets/landing_graphic.png';
 
 const Landing = () => {
     return (
@@ -67,9 +67,10 @@ const Landing = () => {
                         <div className="hero-visual fade-in">
                             <div className="hero-img-wrap hover-elevate">
                                 <img
-                                    src={heroNodes}
+                                    src={landingGraphic}
                                     alt="CogniCase Legal Management"
                                     className="hero-img"
+                                    style={{ objectFit: 'contain', width: '100%', height: 'auto', background: 'transparent' }}
                                 />
                                 {/* Floating badge */}
                                 <div className="hero-float-badge top-right">

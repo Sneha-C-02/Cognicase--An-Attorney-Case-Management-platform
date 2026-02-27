@@ -117,6 +117,44 @@ body {
   animation: fadeOverlay 0.2s ease;
 }
 
+/*
+## 7. Client Management CRUD & Search
+- [x] Implement Search logic in `clientController.js` (if missing)
+- [x] Add Update and Delete endpoints in `clientController.js`
+- [x] Connect Update/Delete routes in `clientRoutes.js`
+- [x] Fix Search UI & logic in `Clients.jsx`
+- [x] Add Edit and Delete actions/modals in `Clients.jsx`
+- [x] Add "Visit Case" navigation functionality in `Clients.jsx`
+
+## 9. Task Management CRUD & Search
+- [x] Implement Search logic in `taskController.js`
+- [x] Add Update and Delete endpoints in `taskController.js`
+- [x] Connect Update/Delete routes in `taskRoutes.js`
+- [x] Fix Search UI & logic in `Tasks.jsx`
+- [x] Add Edit and Delete actions/modals in `Tasks.jsx`
+- [x] Ensure Case selection is possible when creating/editing tasks
+
+## 11. Website & Document CRUD
+- [x] Replace Landing Page Hero Image with new asset
+- [x] Implement Search logic in `documentController.js`
+- [x] Add Update and Delete endpoints in `documentController.js`
+- [x] Connect Update/Delete routes in `documentRoutes.js`
+- [x] Fix Search UI & logic in `Documents.jsx`
+- [x] Add Edit and Delete actions/modals in `Documents.jsx`
+- [x] Ensure Case selection is possible when creating/editing documents
+
+## 12. Verification
+- [x] Verify Document Search works with backend
+- [x] Verify Document Update reflects in DB
+- [x] Verify Document Delete removes record from DB
+- [x] Verify Landing Page reflects the new professional image
+
+## 13. Documentation
+- [x] Verify Task Search works with backend
+- [x] Verify Task Update (Status, Priority, etc.) reflects in DB
+- [x] Verify Task Delete removes record from DB
+*/
+
 @keyframes fadeOverlay {
   from {
     opacity: 0;

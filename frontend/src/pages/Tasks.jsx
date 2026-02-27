@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { CheckSquare, Calendar, Flag, Loader2, Plus, X } from 'lucide-react';
-import { getTasks, createTask, updateTaskStatus } from '../api/tasks';
+import { getTasks, createTask, updateTask, deleteTask, updateTaskStatus } from '../api/tasks';
 import { getCases } from '../api/cases';
 
 const Tasks = () => {
+    const [searchTerm, setSearchTerm] = useState('');
     const [tasks, setTasks] = useState([]);
     const [cases, setCases] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,12 +14,23 @@ const Tasks = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({ title: '', caseId: '', priority: 'Medium', dueDate: '' });
 
-    useEffect(() => { fetchData(); }, []);
+    // Edit state
+    const [editingTask, setEditingTask] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    useEffect(() => {
+        const debounce = setTimeout(() => {
+            fetchData();
+        }, 300);
+        return () => clearTimeout(debounce);
+    }, [searchTerm]);
 
     const fetchData = async () => {
         setLoading(true); setError(null);
         try {
-            const [tasksData, casesData] = await Promise.all([getTasks(), getCases()]);
+            const params = {};
+            if (searchTerm) params.search = searchTerm;
+            const [tasksData, casesData] = await Promise.all([getTasks(params), getCases()]);
             setTasks(tasksData || []);
             setCases(casesData || []);
         } catch (err) { setError('Failed to fetch tasks.'); }
@@ -44,11 +56,45 @@ const Tasks = () => {
         } catch { alert('Failed to update status'); }
     };
 
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await updateTask(editingTask._id, editingTask);
+            await fetchData();
+            setIsEditModalOpen(false);
+            setEditingTask(null);
+        } catch (err) { alert('Failed to update task: ' + err.message); }
+        finally { setIsSubmitting(false); }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this task?')) return;
+        try {
+            await deleteTask(id);
+            await fetchData();
+        } catch (err) { alert('Failed to delete task: ' + err.message); }
+    };
+
+    const openEditModal = (task) => {
+        setEditingTask({
+            ...task,
+            caseId: task.caseId?._id || task.caseId || '',
+            dueDate: task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : ''
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingTask(null);
+    };
+
     const closeModal = () => setIsModalOpen(false);
 
     return (
         <div className="fade-in">
-            <Header title="Task Management" />
+            <Header title="Task Management" searchValue={searchTerm} onSearch={setSearchTerm} />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
                 <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
@@ -65,6 +111,7 @@ const Tasks = () => {
                             <th>Deadline</th>
                             <th>Priority</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -100,10 +147,16 @@ const Tasks = () => {
                                         onChange={e => handleStatusUpdate(task._id, e.target.value)}
                                     >
                                         <option value="Todo">Todo</option>
-                                        <option value="In Progress">In Progress</option>
+                                        <option value="InProgress">In Progress</option>
                                         <option value="Completed">Completed</option>
-                                        <option value="On Hold">On Hold</option>
+                                        <option value="OnHold">On Hold</option>
                                     </select>
+                                </td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button onClick={() => openEditModal(task)} style={{ border: 'none', background: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8125rem' }}>Edit</button>
+                                        <button onClick={() => handleDelete(task._id)} style={{ border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8125rem' }}>Delete</button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -154,6 +207,72 @@ const Tasks = () => {
                                 <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
                                 <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                                     {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Creating…</> : <><Plus size={16} /> Create Task</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isEditModalOpen && editingTask && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeEditModal()}>
+                    <div className="modal-box">
+                        <div className="modal-header">
+                            <h2>Edit Task</h2>
+                            <button className="modal-close-btn" onClick={closeEditModal}><X size={20} /></button>
+                        </div>
+
+                        <form onSubmit={handleUpdate}>
+                            <div className="form-group">
+                                <label>Task Title *</label>
+                                <input className="form-input" type="text" value={editingTask.title}
+                                    onChange={e => setEditingTask({ ...editingTask, title: e.target.value })} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Associate with Case</label>
+                                <select className="form-input" value={editingTask.caseId}
+                                    onChange={e => setEditingTask({ ...editingTask, caseId: e.target.value })}>
+                                    <option value="">No Case (General Task)</option>
+                                    {cases.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
+                                </select>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Priority</label>
+                                    <select className="form-input" value={editingTask.priority}
+                                        onChange={e => setEditingTask({ ...editingTask, priority: e.target.value })}>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Status</label>
+                                    <select className="form-input" value={editingTask.status}
+                                        onChange={e => setEditingTask({ ...editingTask, status: e.target.value })}>
+                                        <option value="Todo">Todo</option>
+                                        <option value="InProgress">In Progress</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="OnHold">On Hold</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Due Date</label>
+                                <input className="form-input" type="date" value={editingTask.dueDate || ''}
+                                    onChange={e => setEditingTask({ ...editingTask, dueDate: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea className="form-input" value={editingTask.description || ''}
+                                    onChange={e => setEditingTask({ ...editingTask, description: e.target.value })}
+                                    style={{ resize: 'vertical', minHeight: '80px' }} />
+                            </div>
+
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={closeEditModal}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                                    {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Saving…</> : <><Plus size={16} /> Save Changes</>}
                                 </button>
                             </div>
                         </form>

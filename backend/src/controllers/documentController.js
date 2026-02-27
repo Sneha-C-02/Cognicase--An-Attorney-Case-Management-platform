@@ -2,14 +2,32 @@ import Document from '../models/Document.js';
 import { logActivity } from '../utils/activityLogger.js';
 export const getDocumentsByCase = async (req, res) => {
     try {
-        const caseId = req.query.caseId || req.params.caseId;
+        const { caseId, search } = req.query;
         const filter = { createdBy: req.user._id };
-        if (caseId) filter.caseId = caseId;
+        if (caseId || req.params.caseId) filter.caseId = caseId || req.params.caseId;
+
+        if (search) {
+            filter.name = { $regex: search, $options: 'i' };
+        }
 
         const documents = await Document.find(filter).populate('caseId', 'title').sort({ createdAt: -1 });
         res.json(documents);
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+export const updateDocument = async (req, res) => {
+    try {
+        const document = await Document.findOneAndUpdate(
+            { _id: req.params.id, createdBy: req.user._id },
+            req.body,
+            { new: true }
+        );
+        if (!document) return res.status(404).json({ message: 'Document not found' });
+        res.json(document);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 };
 

@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import authMiddleware from '../middleware/authMiddleware.js';
 import {
-    getDocumentsByCase, createDocument, deleteDocument
+    getDocumentsByCase, createDocument, updateDocument, deleteDocument
 } from '../controllers/documentController.js';
 
 const router = express.Router({ mergeParams: true });
@@ -24,6 +24,7 @@ router.use(authMiddleware);
 
 router.get('/', getDocumentsByCase);
 router.post('/', upload.single('file'), createDocument);
+router.put('/:id', updateDocument);
 router.delete('/:id', deleteDocument);
 
 export default router;

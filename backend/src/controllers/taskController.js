@@ -2,9 +2,16 @@ import Task from '../models/Task.js';
 import { logActivity } from '../utils/activityLogger.js';
 export const getTasksByCase = async (req, res) => {
     try {
-        const caseId = req.query.caseId || req.params.caseId;
-        const filter = { createdBy: req.user._id };
-        if (caseId) filter.caseId = caseId;
+        const { caseId, search } = req.query;
+        let filter = { createdBy: req.user._id };
+
+        if (caseId || req.params.caseId) {
+            filter.caseId = caseId || req.params.caseId;
+        }
+
+        if (search) {
+            filter.title = { $regex: search, $options: 'i' };
+        }
 
         const tasks = await Task.find(filter).populate('caseId', 'title').sort({ createdAt: -1 });
         res.json(tasks);

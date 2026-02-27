@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header.jsx';
 import { Plus, ChevronRight, Search, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getCases, createCase } from '../api/cases';
+import { getCases, createCase, updateCase, deleteCase } from '../api/cases';
 import { getClients } from '../api/clients';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,14 +17,19 @@ const Cases = () => {
     const [error, setError] = useState(null); // Added from Code Edit
     const [isModalOpen, setIsModalOpen] = useState(false); // Added from Code Edit
     const [isSubmitting, setIsSubmitting] = useState(false); // Added from Code Edit
-    const [formData, setFormData] = useState({ // Added from Code Edit
+    const [formData, setFormData] = useState({
         caseNumber: `CASE-${Math.floor(1000 + Math.random() * 9000)}`,
         title: '',
+        clientId: '',
         client: '',
         type: 'Civil',
         status: 'Open',
+        priority: 'Medium',
         description: ''
     });
+
+    const [editingCase, setEditingCase] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     // Modified fetchCases to use getCases from API and handle clients
     const fetchCases = useCallback(async () => {
@@ -64,14 +69,16 @@ const Cases = () => {
         setIsSubmitting(true);
         try {
             await createCase(formData);
-            await fetchCases(); // RE-FETCH from source of truth
+            await fetchCases();
             setIsModalOpen(false);
             setFormData({
                 caseNumber: `CASE-${Math.floor(1000 + Math.random() * 9000)}`,
                 title: '',
+                clientId: '',
                 client: '',
                 type: 'Civil',
                 status: 'Open',
+                priority: 'Medium',
                 description: ''
             });
         } catch (err) {
@@ -81,9 +88,41 @@ const Cases = () => {
         }
     };
 
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            const { _id, ...updateData } = editingCase;
+            await updateCase(_id, updateData);
+            await fetchCases();
+            setIsEditModalOpen(false);
+            setEditingCase(null);
+        } catch (err) {
+            alert('Failed to update case: ' + err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this case? This action cannot be undone.')) return;
+        try {
+            await deleteCase(id);
+            await fetchCases();
+        } catch (err) {
+            alert('Failed to delete case: ' + err.message);
+        }
+    };
+
+    const openEditModal = (e, caseData) => {
+        e.stopPropagation(); // Don't navigate to details
+        setEditingCase({ ...caseData });
+        setIsEditModalOpen(true);
+    };
+
     return (
         <div className="fade-in">
-            <Header title="Case Management" />
+            <Header title="Case Management" searchValue={searchTerm} onSearch={setSearchTerm} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', gap: '0.75rem', flex: 1 }}>
@@ -154,7 +193,26 @@ const Cases = () => {
                                 <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                                     {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
                                 </td>
-                                <td><ChevronRight size={18} color="#94a3b8" /></td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            className="btn btn-secondary"
+                                            style={{ padding: '0.4rem', borderRadius: 'var(--radius-sm)' }}
+                                            onClick={(e) => openEditModal(e, c)}
+                                            title="Edit Case"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            style={{ padding: '0.4rem', borderRadius: 'var(--radius-sm)', color: 'var(--danger)', borderColor: '#fee2e2' }}
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(c._id); }}
+                                            title="Delete Case"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         )) : (
                             <tr><td colSpan="7" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
@@ -180,9 +238,25 @@ const Cases = () => {
                                     onChange={e => setFormData({ ...formData, title: e.target.value })} required autoFocus />
                             </div>
                             <div className="form-group">
-                                <label>Client Name</label>
-                                <input className="form-input" type="text" placeholder="Name of the client" value={formData.client}
-                                    onChange={e => setFormData({ ...formData, client: e.target.value })} />
+                                <label>Client *</label>
+                                <select
+                                    className="form-input"
+                                    value={formData.clientId}
+                                    onChange={e => {
+                                        const selectedClient = clients.find(cl => cl._id === e.target.value);
+                                        setFormData({
+                                            ...formData,
+                                            clientId: e.target.value,
+                                            client: selectedClient ? selectedClient.name : ''
+                                        });
+                                    }}
+                                    required
+                                >
+                                    <option value="">Select a client</option>
+                                    {clients.map(cl => (
+                                        <option key={cl._id} value={cl._id}>{cl.name} {cl.company ? `(${cl.company})` : ''}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
@@ -208,6 +282,16 @@ const Cases = () => {
                                 </div>
                             </div>
                             <div className="form-group">
+                                <label>Priority</label>
+                                <select className="form-input" value={formData.priority}
+                                    onChange={e => setFormData({ ...formData, priority: e.target.value })}>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group">
                                 <label>Description</label>
                                 <textarea className="form-input" rows={3} placeholder="Brief description of the case..." value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -218,6 +302,91 @@ const Cases = () => {
                                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
                                 <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                                     {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Creating…</> : <><Plus size={16} /> Create Case</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isEditModalOpen && editingCase && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setIsEditModalOpen(false)}>
+                    <div className="modal-box">
+                        <div className="modal-header">
+                            <h2>Edit Case</h2>
+                            <button className="modal-close-btn" onClick={() => setIsEditModalOpen(false)}><X size={20} /></button>
+                        </div>
+
+                        <form onSubmit={handleUpdate}>
+                            <div className="form-group">
+                                <label>Case Title *</label>
+                                <input className="form-input" type="text" value={editingCase.title}
+                                    onChange={e => setEditingCase({ ...editingCase, title: e.target.value })} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Client *</label>
+                                <select
+                                    className="form-input"
+                                    value={editingCase.clientId?._id || editingCase.clientId || ''}
+                                    onChange={e => {
+                                        const selectedClient = clients.find(cl => cl._id === e.target.value);
+                                        setEditingCase({
+                                            ...editingCase,
+                                            clientId: e.target.value,
+                                            clientName: selectedClient ? selectedClient.name : ''
+                                        });
+                                    }}
+                                    required
+                                >
+                                    <option value="">Select a client</option>
+                                    {clients.map(cl => (
+                                        <option key={cl._id} value={cl._id}>{cl.name} {cl.company ? `(${cl.company})` : ''}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Case Type</label>
+                                    <select className="form-input" value={editingCase.caseType}
+                                        onChange={e => setEditingCase({ ...editingCase, caseType: e.target.value })}>
+                                        <option>Civil</option>
+                                        <option>Criminal</option>
+                                        <option>Family</option>
+                                        <option>Corporate</option>
+                                        <option>Real Estate</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Status</label>
+                                    <select className="form-input" value={editingCase.status}
+                                        onChange={e => setEditingCase({ ...editingCase, status: e.target.value })}>
+                                        <option value="Open">Open</option>
+                                        <option value="InProgress">In Progress</option>
+                                        <option value="Closed">Closed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Priority</label>
+                                <select className="form-input" value={editingCase.priority}
+                                    onChange={e => setEditingCase({ ...editingCase, priority: e.target.value })}>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea className="form-input" rows={3} value={editingCase.description || ''}
+                                    onChange={e => setEditingCase({ ...editingCase, description: e.target.value })}
+                                    style={{ resize: 'vertical', minHeight: '80px' }} />
+                            </div>
+
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                                    {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Saving…</> : <><Plus size={16} /> Save Changes</>}
                                 </button>
                             </div>
                         </form>
